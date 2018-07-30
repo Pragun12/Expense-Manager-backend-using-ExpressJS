@@ -5,6 +5,7 @@ var cors = require('cors');
 var mongojs = require('mongojs');
 var multer=require('multer');
 var db = mongojs('expenseapp', ['users','expenses']);
+var ObjectId=mongojs.ObjectID;
 var app=express();
 app.use(express.static('public'))
 
@@ -15,7 +16,7 @@ var storage = multer.diskStorage({
     filename: function (req, file, cb) {
       cb(null, file.originalname)
     }
-  })
+  });
   
 var upload = multer({ storage:storage });
 app.use(bodyParser.json());
@@ -71,11 +72,51 @@ app.use(cors());
     //res.json(users[0]);
      });
 
+     app.delete('/api/expense/:id',function(req,res){
 
+        db.expenses.remove({_id:ObjectId(req.params.id)},function(err,result){
+        
+            if(err){
+                console.log(err);
+            }
+          
+    
+           res.send(result);
+        });
+     })
+
+     app.put('/api/expense',upload.single('file'),function(req,res,next){  
+         
+        console.log(req.file);
+         
+        var id=req.body.id;
+
+        var expenseInfo={
+            
+            merchant:req.body.merchant,
+            date:req.body.date,
+            total:req.body.total,
+            category:req.body.category,
+            comment:req.body.comment,
+            file:req.file.originalname
+
+            
+       };
+
+       
+         db.expenses.findAndModify({
+            query: { _id:ObjectId(id) },
+            update: { $set: expenseInfo },
+            new: true
+        }, function (err, doc, lastErrorObject) {
+           res.json(doc);
+        });
+       
+       });
 
      app.post('/api/expense',upload.single('file'),function(req,res,next){     
          
-        
+        console.log(req.body);
 
       var expenseInfo={
             userid:req.body.userid,
